@@ -1,0 +1,1699 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hello World Berkelas + Simulator Mobil 3D</title>
+    <script src="https://cdn.jsdelivr.net/npm/brython@3.11.2/brython.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/brython@3.11.2/brython_stdlib.js"></script>
+    <style>
+        /* ===== VARIABEL CSS ===== */
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --accent-color: #e74c3c;
+            --dark-color: #2c3e50;
+            --light-color: #ecf0f1;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        /* ===== RESET & BASE STYLES ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            color: var(--light-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* ===== HEADER STYLES ===== */
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            width: 100%;
+            max-width: 1200px;
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, #ff7e5f, #feb47b);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        /* ===== NAVIGATION STYLES ===== */
+        .nav-tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .nav-tab {
+            padding: 0.8rem 1.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 50px;
+            color: var(--light-color);
+            font-weight: bold;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .nav-tab.active {
+            background: var(--primary-color);
+            box-shadow: 0 0 15px rgba(52, 152, 219, 0.5);
+        }
+
+        .nav-tab:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* ===== MAIN CONTAINER STYLES ===== */
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ===== CARD STYLES ===== */
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: var(--transition);
+            height: fit-content;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .card h2 {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            color: var(--secondary-color);
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 0.5rem;
+        }
+
+        /* ===== SIMULATOR MOBIL 3D STYLES ===== */
+        .simulator-3d-container {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            background: #2c3e50;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+            perspective: 1000px;
+        }
+
+        .road-3d {
+            position: absolute;
+            width: 100%;
+            height: 200%;
+            background: #34495e;
+            top: -50%;
+            transform-style: preserve-3d;
+            transform: rotateX(60deg);
+        }
+
+        .road-lines {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                to bottom,
+                transparent 0,
+                transparent 50px,
+                #f1c40f 50px,
+                #f1c40f 100px
+            );
+            animation: roadMove 2s linear infinite;
+        }
+
+        @keyframes roadMove {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(100px); }
+        }
+
+        .player-car-3d {
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%) translateZ(0);
+            width: 60px;
+            height: 120px;
+            background: #e74c3c;
+            border-radius: 10px 10px 0 0;
+            transform-style: preserve-3d;
+            transition: transform 0.1s;
+        }
+
+        .player-car-3d::before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 5px;
+            width: 50px;
+            height: 40px;
+            background: #3498db;
+            border-radius: 5px;
+        }
+
+        .player-car-3d::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 5px;
+            width: 20px;
+            height: 15px;
+            background: #2c3e50;
+            border-radius: 3px;
+        }
+
+        .car-wheel-3d {
+            position: absolute;
+            bottom: -5px;
+            width: 15px;
+            height: 15px;
+            background: #2c3e50;
+            border-radius: 50%;
+        }
+
+        .car-wheel-3d.front {
+            right: 5px;
+        }
+
+        .car-wheel-3d.back {
+            left: 5px;
+        }
+
+        .traffic-car {
+            position: absolute;
+            width: 60px;
+            height: 120px;
+            background: #9b59b6;
+            border-radius: 10px 10px 0 0;
+            transform-style: preserve-3d;
+            transition: transform 0.1s;
+        }
+
+        .traffic-car::before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 5px;
+            width: 50px;
+            height: 40px;
+            background: #8e44ad;
+            border-radius: 5px;
+        }
+
+        .building {
+            position: absolute;
+            background: #7f8c8d;
+            transform-style: preserve-3d;
+            transform: rotateX(60deg);
+        }
+
+        .building::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 20px;
+            background: #95a5a6;
+            bottom: 0;
+        }
+
+        .controls-3d {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 1rem;
+        }
+
+        .control-btn {
+            padding: 15px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .control-btn:hover {
+            background: var(--secondary-color);
+            transform: scale(1.05);
+        }
+
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+
+        .gas-btn {
+            grid-column: 2;
+            grid-row: 1;
+        }
+
+        .brake-btn {
+            grid-column: 2;
+            grid-row: 2;
+        }
+
+        .left-btn {
+            grid-column: 1;
+            grid-row: 2;
+        }
+
+        .right-btn {
+            grid-column: 3;
+            grid-row: 2;
+        }
+
+        .map-toggle {
+            grid-column: 1 / span 3;
+            grid-row: 1;
+            background: var(--accent-color);
+        }
+
+        .game-info-panel {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .info-label {
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+
+        .info-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .speedometer {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            margin: 0 auto;
+        }
+
+        .speedometer-circle {
+            width: 100%;
+            height: 100%;
+            border: 10px solid #34495e;
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .speedometer-fill {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: conic-gradient(#2ecc71 0%, #f39c12 70%, #e74c3c 100%);
+            border-radius: 50%;
+            clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, 50% 0%);
+            transform: rotate(0deg);
+            transition: transform 0.5s ease;
+        }
+
+        .speedometer-center {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: calc(100% - 20px);
+            height: calc(100% - 20px);
+            background: #2c3e50;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .jakarta-map {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #27ae60;
+            opacity: 0.1;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+
+        .jakarta-map.active {
+            opacity: 0.3;
+        }
+
+        .road-jakarta {
+            position: absolute;
+            background: #34495e;
+        }
+
+        .road-jakarta.tol {
+            background: #e74c3c;
+        }
+
+        .landmark {
+            position: absolute;
+            background: #f1c40f;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.7rem;
+            color: #2c3e50;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        /* ===== HELLO WORLD ANIMATION STYLES ===== */
+        .hello-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+            margin-bottom: 1.5rem;
+            perspective: 1000px;
+        }
+
+        .hello-text {
+            font-size: 3.5rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, #ff7e5f, #feb47b, #86a8e7, #91eac9);
+            background-size: 400% 400%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: gradientShift 4s ease infinite, float 3s ease-in-out infinite;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px) rotateX(0deg); }
+            50% { transform: translateY(-10px) rotateX(5deg); }
+            100% { transform: translateY(0px) rotateX(0deg); }
+        }
+
+        /* ===== BUTTON STYLES ===== */
+        .btn {
+            display: inline-block;
+            padding: 0.8rem 1.5rem;
+            margin: 0.5rem;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: var(--shadow);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            background: var(--secondary-color);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-danger {
+            background: var(--accent-color);
+        }
+
+        .btn-success {
+            background: var(--secondary-color);
+        }
+
+        /* ===== OUTPUT STYLES ===== */
+        .output {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+            min-height: 100px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .output-line {
+            margin-bottom: 0.5rem;
+            padding: 0.3rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* ===== FOOTER STYLES ===== */
+        .footer {
+            margin-top: 3rem;
+            text-align: center;
+            width: 100%;
+            max-width: 1200px;
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* ===== MODAL STYLES ===== */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: var(--dark-color);
+            padding: 2rem;
+            border-radius: 15px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--light-color);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        /* ===== TAB CONTENT STYLES ===== */
+        .tab-content {
+            display: none;
+            width: 100%;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* ===== RESPONSIVE ADJUSTMENTS ===== */
+        @media (max-width: 480px) {
+            body {
+                padding: 1rem;
+            }
+            
+            .header h1 {
+                font-size: 2.2rem;
+            }
+            
+            .hello-text {
+                font-size: 2.5rem;
+            }
+            
+            .card {
+                padding: 1rem;
+            }
+            
+            .nav-tabs {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .nav-tab {
+                width: 100%;
+                text-align: center;
+            }
+            
+            .simulator-3d-container {
+                height: 300px;
+            }
+            
+            .controls-3d {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .gas-btn, .brake-btn {
+                grid-column: 1;
+            }
+            
+            .left-btn, .right-btn {
+                grid-column: 2;
+            }
+            
+            .map-toggle {
+                grid-column: 1 / span 2;
+            }
+        }
+    </style>
+</head>
+<body onload="brython()">
+    <!-- Header Section -->
+    <header class="header">
+        <h1>Hello World Berkelas + Simulator Mobil 3D</h1>
+        <p>Demonstrasi integrasi HTML, CSS, JavaScript, Python, dan Simulator Mobil 3D Jakarta</p>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <div class="nav-tabs">
+        <button class="nav-tab active" onclick="switchTab('tab-hello')">Hello World</button>
+        <button class="nav-tab" onclick="switchTab('tab-simulator')">Simulator Mobil 3D</button>
+        <button class="nav-tab" onclick="switchTab('tab-python')">Python</button>
+    </div>
+
+    <!-- Hello World Tab -->
+    <div id="tab-hello" class="tab-content active">
+        <main class="container">
+            <!-- Left Column -->
+            <div class="left-column">
+                <!-- Hello World Card -->
+                <div class="card">
+                    <h2>Animasi Hello World</h2>
+                    <div class="hello-container">
+                        <div class="hello-text" id="helloText">Hello World!</div>
+                    </div>
+                    <div class="button-group">
+                        <button class="btn" onclick="changeHelloText()">Ubah Teks</button>
+                        <button class="btn btn-success" onclick="startHelloAnimation()">Mulai Animasi</button>
+                        <button class="btn btn-danger" onclick="stopHelloAnimation()">Hentikan Animasi</button>
+                    </div>
+                </div>
+
+                <!-- JavaScript Demo Card -->
+                <div class="card">
+                    <h2>Demo JavaScript</h2>
+                    <div class="input-group">
+                        <label for="jsInput">Masukkan teks:</label>
+                        <input type="text" id="jsInput" placeholder="Ketik sesuatu...">
+                    </div>
+                    <button class="btn" onclick="processWithJS()">Proses dengan JavaScript</button>
+                    <div class="output" id="jsOutput">
+                        <div class="output-line">Output JavaScript akan muncul di sini...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="right-column">
+                <!-- Python Demo Card -->
+                <div class="card">
+                    <h2>Demo Python (Brython)</h2>
+                    <div class="input-group">
+                        <label for="pyInput">Masukkan angka:</label>
+                        <input type="number" id="pyInput" placeholder="Masukkan angka...">
+                    </div>
+                    <button class="btn" onclick="processWithPython()">Proses dengan Python</button>
+                    <div class="output" id="pyOutput">
+                        <div class="output-line">Output Python akan muncul di sini...</div>
+                    </div>
+                </div>
+
+                <!-- Data Visualization Card -->
+                <div class="card">
+                    <h2>Visualisasi Data</h2>
+                    <div class="input-group">
+                        <label for="dataInput">Masukkan data (pisahkan dengan koma):</label>
+                        <input type="text" id="dataInput" placeholder="Contoh: 10,20,30,40,50">
+                    </div>
+                    <button class="btn" onclick="createChart()">Buat Chart</button>
+                    <div id="chartContainer" style="margin-top: 1rem; height: 200px; position: relative;">
+                        <canvas id="dataChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Simulator Mobil 3D Tab -->
+    <div id="tab-simulator" class="tab-content">
+        <main class="container">
+            <!-- Full Width Simulator -->
+            <div class="card" style="grid-column: 1 / -1;">
+                <h2>Simulator Mobil 3D Jakarta</h2>
+                
+                <div class="game-info-panel">
+                    <div class="info-item">
+                        <div class="info-label">Kecepatan</div>
+                        <div class="info-value" id="speedValue">0 km/jam</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Jarak Tempuh</div>
+                        <div class="info-value" id="distanceValue">0 m</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Kondisi Jalan</div>
+                        <div class="info-value" id="roadCondition">Biasa</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Traffic</div>
+                        <div class="info-value" id="trafficValue">Sedang</div>
+                    </div>
+                </div>
+                
+                <div class="simulator-3d-container" id="simulator3D">
+                    <div class="road-3d">
+                        <div class="road-lines"></div>
+                    </div>
+                    <div class="player-car-3d" id="playerCar3D">
+                        <div class="car-wheel-3d front"></div>
+                        <div class="car-wheel-3d back"></div>
+                    </div>
+                    <div class="jakarta-map" id="jakartaMap">
+                        <!-- Peta Jakarta akan diisi oleh JavaScript -->
+                    </div>
+                </div>
+                
+                <div class="speedometer">
+                    <div class="speedometer-circle">
+                        <div class="speedometer-fill" id="speedometerFill"></div>
+                        <div class="speedometer-center">
+                            <span id="speedometerValue">0</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="controls-3d">
+                    <button class="control-btn gas-btn" onmousedown="startGas()" onmouseup="stopGas()" ontouchstart="startGas()" ontouchend="stopGas()">
+                        <i>Gas</i>
+                    </button>
+                    <button class="control-btn brake-btn" onmousedown="startBrake()" onmouseup="stopBrake()" ontouchstart="startBrake()" ontouchend="stopBrake()">
+                        <i>Rem</i>
+                    </button>
+                    <button class="control-btn left-btn" onmousedown="startTurnLeft()" onmouseup="stopTurn()" ontouchstart="startTurnLeft()" ontouchend="stopTurn()">
+                        <i>Kiri</i>
+                    </button>
+                    <button class="control-btn right-btn" onmousedown="startTurnRight()" onmouseup="stopTurn()" ontouchstart="startTurnRight()" ontouchend="stopTurn()">
+                        <i>Kanan</i>
+                    </button>
+                    <button class="control-btn map-toggle" onclick="toggleMap()">
+                        <i>Toggle Peta</i>
+                    </button>
+                </div>
+                
+                <div style="margin-top: 1rem; text-align: center;">
+                    <button class="btn btn-success" onclick="startSimulator()">Mulai Simulator</button>
+                    <button class="btn btn-danger" onclick="stopSimulator()">Berhenti</button>
+                    <button class="btn" onclick="resetSimulator()">Reset</button>
+                </div>
+            </div>
+            
+            <!-- Info Panel -->
+            <div class="card">
+                <h2>Informasi Simulator</h2>
+                <div class="output">
+                    <div class="output-line"><strong>Kondisi Jalan:</strong></div>
+                    <div class="output-line">- Jalan Biasa: Traffic 40-70 km/jam</div>
+                    <div class="output-line">- Jalan Tol: Traffic 90-150 km/jam</div>
+                    <div class="output-line"><strong>Kontrol:</strong></div>
+                    <div class="output-line">- Gas: Percepat kendaraan</div>
+                    <div class="output-line">- Rem: Perlambat kendaraan</div>
+                    <div class="output-line">- Kiri/Kanan: Belok kendaraan</div>
+                    <div class="output-line"><strong>Tips:</strong></div>
+                    <div class="output-line">- Gunakan peta untuk navigasi</div>
+                    <div class="output-line">- Perhatikan traffic di jalan</div>
+                </div>
+            </div>
+            
+            <!-- Traffic Info -->
+            <div class="card">
+                <h2>Status Lalu Lintas</h2>
+                <div id="trafficInfo" class="output">
+                    <div class="output-line">Mobil pemain: <span style="color: #e74c3c">Merah</span></div>
+                    <div class="output-line">Traffic: <span style="color: #9b59b6">Ungu</span></div>
+                    <div class="output-line">Jalan biasa: <span style="color: #34495e">Abu-abu</span></div>
+                    <div class="output-line">Jalan tol: <span style="color: #e74c3c">Merah</span></div>
+                </div>
+                <button class="btn" onclick="changeTrafficCondition()">Ubah Kondisi Traffic</button>
+            </div>
+        </main>
+    </div>
+
+    <!-- Python Tab -->
+    <div id="tab-python" class="tab-content">
+        <main class="container">
+            <!-- Left Column -->
+            <div class="left-column">
+                <!-- Python Math Card -->
+                <div class="card">
+                    <h2>Operasi Matematika (Python)</h2>
+                    <div class="input-group">
+                        <label for="mathInput">Masukkan ekspresi matematika:</label>
+                        <input type="text" id="mathInput" placeholder="Contoh: 2**3 + math.sqrt(16)">
+                    </div>
+                    <button class="btn" onclick="evaluateMath()">Evaluasi</button>
+                    <div class="output" id="mathOutput">
+                        <div class="output-line">Hasil akan muncul di sini...</div>
+                    </div>
+                </div>
+
+                <!-- Python List Operations Card -->
+                <div class="card">
+                    <h2>Operasi List (Python)</h2>
+                    <div class="input-group">
+                        <label for="listInput">Masukkan list (pisahkan dengan koma):</label>
+                        <input type="text" id="listInput" placeholder="Contoh: 1,2,3,4,5">
+                    </div>
+                    <button class="btn" onclick="processList()">Proses List</button>
+                    <div class="output" id="listOutput">
+                        <div class="output-line">Hasil operasi list akan muncul di sini...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="right-column">
+                <!-- Python Fibonacci Card -->
+                <div class="card">
+                    <h2>Deret Fibonacci (Python)</h2>
+                    <div class="input-group">
+                        <label for="fibInput">Jumlah angka Fibonacci:</label>
+                        <input type="number" id="fibInput" min="1" max="20" value="10">
+                    </div>
+                    <button class="btn" onclick="generateFibonacci()">Generate</button>
+                    <div class="output" id="fibOutput">
+                        <div class="output-line">Deret Fibonacci akan muncul di sini...</div>
+                    </div>
+                </div>
+
+                <!-- Python Traffic Simulation Card -->
+                <div class="card">
+                    <h2>Simulasi Traffic (Python)</h2>
+                    <div class="input-group">
+                        <label for="trafficSimInput">Jumlah kendaraan:</label>
+                        <input type="number" id="trafficSimInput" min="5" max="20" value="10">
+                    </div>
+                    <button class="btn" onclick="simulateTraffic()">Simulasi Traffic</button>
+                    <div class="output" id="trafficSimOutput">
+                        <div class="output-line">Hasil simulasi traffic akan muncul di sini...</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>Dibuat dengan ❤️ menggunakan HTML, CSS, JavaScript, dan Python (Brython)</p>
+        <p>Kode ini memiliki lebih dari 1500 baris dan dapat berjalan di Code Studio Android</p>
+    </footer>
+
+    <!-- Modal -->
+    <div class="modal" id="infoModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Informasi Program</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <p>Program ini menunjukkan integrasi berbagai teknologi web dan simulator mobil 3D:</p>
+            <ul style="margin: 1rem 0; padding-left: 1.5rem;">
+                <li>HTML untuk struktur</li>
+                <li>CSS untuk styling dan animasi 3D</li>
+                <li>JavaScript untuk interaktivitas dan simulasi</li>
+                <li>Python (via Brython) untuk logika pemrograman</li>
+                <li>Simulator mobil 3D dengan peta Jakarta</li>
+            </ul>
+            <p>Semua kode berada dalam satu file HTML untuk kemudahan penggunaan di Code Studio Android.</p>
+        </div>
+    </div>
+
+    <!-- JavaScript Code -->
+    <script>
+        // ===== VARIABEL GLOBAL =====
+        let helloAnimationInterval;
+        let simulatorInterval;
+        let carSpeed = 0;
+        let carPosition = 50;
+        let carDirection = 0;
+        let distance = 0;
+        let roadCondition = 'biasa'; // 'biasa' atau 'tol'
+        let trafficCondition = 'sedang'; // 'ringan', 'sedang', 'padat'
+        let isGasPressed = false;
+        let isBrakePressed = false;
+        let isTurning = false;
+        let turnDirection = 0; // -1 for left, 1 for right
+        let trafficCars = [];
+        let buildings = [];
+        let isMapVisible = false;
+
+        // ===== FUNGSI TAB NAVIGATION =====
+        function switchTab(tabId) {
+            // Sembunyikan semua tab
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Tampilkan tab yang dipilih
+            document.getElementById(tabId).classList.add('active');
+            
+            // Update status aktif pada tombol tab
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Jika tab simulator diaktifkan, inisialisasi simulator
+            if (tabId === 'tab-simulator') {
+                initializeSimulator();
+            }
+        }
+
+        // ===== FUNGSI HELLO WORLD =====
+        function changeHelloText() {
+            const texts = [
+                "Hello World!",
+                "Halo Dunia!",
+                "Bonjour le Monde!",
+                "Hola Mundo!",
+                "Ciao Mondo!",
+                "Hallo Welt!",
+                "こんにちは世界!",
+                "Привет мир!"
+            ];
+            const randomIndex = Math.floor(Math.random() * texts.length);
+            document.getElementById('helloText').textContent = texts[randomIndex];
+        }
+
+        function startHelloAnimation() {
+            if (helloAnimationInterval) {
+                clearInterval(helloAnimationInterval);
+            }
+            
+            const helloText = document.getElementById('helloText');
+            helloText.style.animation = 'gradientShift 4s ease infinite, float 3s ease-in-out infinite';
+            
+            // Tambahkan efek tambahan
+            helloAnimationInterval = setInterval(() => {
+                const colors = [
+                    'linear-gradient(45deg, #ff7e5f, #feb47b)',
+                    'linear-gradient(45deg, #86a8e7, #91eac9)',
+                    'linear-gradient(45deg, #ff6a00, #ee0979)',
+                    'linear-gradient(45deg, #00c6ff, #0072ff)'
+                ];
+                const randomColor = colors[Math.floor(Math.random() * colors.length)];
+                helloText.style.backgroundImage = randomColor;
+            }, 2000);
+        }
+
+        function stopHelloAnimation() {
+            if (helloAnimationInterval) {
+                clearInterval(helloAnimationInterval);
+            }
+            document.getElementById('helloText').style.animation = 'none';
+        }
+
+        // ===== FUNGSI JAVASCRIPT DEMO =====
+        function processWithJS() {
+            const input = document.getElementById('jsInput').value;
+            const output = document.getElementById('jsOutput');
+            
+            if (!input) {
+                output.innerHTML = '<div class="output-line">Silakan masukkan teks terlebih dahulu!</div>';
+                return;
+            }
+            
+            // Simulasi berbagai operasi pada teks
+            const reversed = input.split('').reverse().join('');
+            const upperCase = input.toUpperCase();
+            const lowerCase = input.toLowerCase();
+            const wordCount = input.split(/\s+/).filter(word => word.length > 0).length;
+            const charCount = input.length;
+            
+            output.innerHTML = `
+                <div class="output-line"><strong>Teks asli:</strong> ${input}</div>
+                <div class="output-line"><strong>Teks terbalik:</strong> ${reversed}</div>
+                <div class="output-line"><strong>Huruf besar:</strong> ${upperCase}</div>
+                <div class="output-line"><strong>Huruf kecil:</strong> ${lowerCase}</div>
+                <div class="output-line"><strong>Jumlah kata:</strong> ${wordCount}</div>
+                <div class="output-line"><strong>Jumlah karakter:</strong> ${charCount}</div>
+            `;
+        }
+
+        // ===== FUNGSI CHART =====
+        function createChart() {
+            const dataInput = document.getElementById('dataInput').value;
+            if (!dataInput) {
+                alert('Silakan masukkan data terlebih dahulu!');
+                return;
+            }
+            
+            const dataValues = dataInput.split(',').map(val => parseFloat(val.trim()));
+            
+            // Hapus canvas lama jika ada
+            const oldCanvas = document.getElementById('dataChart');
+            if (oldCanvas) {
+                oldCanvas.remove();
+            }
+            
+            // Buat canvas baru
+            const canvas = document.createElement('canvas');
+            canvas.id = 'dataChart';
+            canvas.width = document.getElementById('chartContainer').offsetWidth;
+            canvas.height = 200;
+            document.getElementById('chartContainer').appendChild(canvas);
+            
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            const maxValue = Math.max(...dataValues);
+            const barWidth = (width - 40) / dataValues.length;
+            
+            // Gambar chart
+            ctx.clearRect(0, 0, width, height);
+            
+            // Gambar sumbu
+            ctx.beginPath();
+            ctx.moveTo(30, 20);
+            ctx.lineTo(30, height - 30);
+            ctx.lineTo(width - 10, height - 30);
+            ctx.strokeStyle = 'white';
+            ctx.stroke();
+            
+            // Gambar batang chart
+            dataValues.forEach((value, index) => {
+                const barHeight = (value / maxValue) * (height - 60);
+                const x = 35 + (index * barWidth);
+                const y = height - 30 - barHeight;
+                
+                ctx.fillStyle = `rgba(${52 + index * 20}, ${152 + index * 10}, ${219 - index * 10}, 0.7)`;
+                ctx.fillRect(x, y, barWidth - 5, barHeight);
+                
+                // Teks nilai
+                ctx.fillStyle = 'white';
+                ctx.font = '12px Arial';
+                ctx.fillText(value, x + (barWidth / 2) - 10, y - 5);
+                
+                // Label
+                ctx.fillText(`Item ${index + 1}`, x + (barWidth / 2) - 15, height - 10);
+            });
+        }
+
+        // ===== FUNGSI SIMULATOR MOBIL 3D =====
+        function initializeSimulator() {
+            createJakartaMap();
+            generateBuildings();
+            generateTraffic();
+            updateSimulatorUI();
+        }
+
+        function createJakartaMap() {
+            const map = document.getElementById('jakartaMap');
+            map.innerHTML = '';
+            
+            // Buat jalan-jalan utama di Jakarta
+            const roads = [
+                { type: 'tol', x: 10, y: 20, width: 80, height: 5, name: 'Tol Dalam Kota' },
+                { type: 'tol', x: 30, y: 10, width: 5, height: 80, name: 'Tol Tomang' },
+                { type: 'biasa', x: 20, y: 40, width: 60, height: 3, name: 'Jl. Thamrin' },
+                { type: 'biasa', x: 40, y: 10, width: 3, height: 60, name: 'Jl. Sudirman' },
+                { type: 'biasa', x: 10, y: 60, width: 70, height: 3, name: 'Jl. Gatot Subroto' },
+                { type: 'biasa', x: 60, y: 20, width: 3, height: 50, name: 'Jl. HR Rasuna Said' }
+            ];
+            
+            roads.forEach(road => {
+                const roadElement = document.createElement('div');
+                roadElement.className = `road-jakarta ${road.type}`;
+                roadElement.style.left = `${road.x}%`;
+                roadElement.style.top = `${road.y}%`;
+                roadElement.style.width = `${road.width}%`;
+                roadElement.style.height = `${road.height}%`;
+                roadElement.title = road.name;
+                map.appendChild(roadElement);
+            });
+            
+            // Tambahkan landmark Jakarta
+            const landmarks = [
+                { x: 45, y: 35, size: 4, name: 'Monas' },
+                { x: 60, y: 50, size: 3, name: 'GBK' },
+                { x: 30, y: 60, size: 3, name: 'Kota Tua' },
+                { x: 70, y: 30, size: 3, name: 'TMII' },
+                { x: 20, y: 25, size: 3, name: 'Tanah Abang' }
+            ];
+            
+            landmarks.forEach(landmark => {
+                const landmarkElement = document.createElement('div');
+                landmarkElement.className = 'landmark';
+                landmarkElement.style.left = `${landmark.x}%`;
+                landmarkElement.style.top = `${landmark.y}%`;
+                landmarkElement.style.width = `${landmark.size}%`;
+                landmarkElement.style.height = `${landmark.size}%`;
+                landmarkElement.textContent = landmark.name;
+                landmarkElement.title = landmark.name;
+                map.appendChild(landmarkElement);
+            });
+        }
+
+        function generateBuildings() {
+            // Hapus bangunan lama
+            buildings.forEach(building => {
+                if (building.element && building.element.parentNode) {
+                    building.element.parentNode.removeChild(building.element);
+                }
+            });
+            
+            buildings = [];
+            const simulator = document.getElementById('simulator3D');
+            
+            // Generate bangunan acak
+            for (let i = 0; i < 15; i++) {
+                const building = document.createElement('div');
+                building.className = 'building';
+                
+                const width = Math.random() * 40 + 20;
+                const height = Math.random() * 100 + 50;
+                const left = Math.random() * 100;
+                const depth = Math.random() * 50 + 10;
+                
+                building.style.width = `${width}px`;
+                building.style.height = `${height}px`;
+                building.style.left = `${left}%`;
+                building.style.bottom = '0';
+                
+                // Simpan data bangunan
+                buildings.push({
+                    element: building,
+                    width: width,
+                    height: height,
+                    left: left,
+                    depth: depth
+                });
+                
+                simulator.appendChild(building);
+            }
+        }
+
+        function generateTraffic() {
+            // Hapus traffic lama
+            trafficCars.forEach(car => {
+                if (car.element && car.element.parentNode) {
+                    car.element.parentNode.removeChild(car.element);
+                }
+            });
+            
+            trafficCars = [];
+            const simulator = document.getElementById('simulator3D');
+            
+            // Generate traffic berdasarkan kondisi
+            let trafficCount;
+            switch(trafficCondition) {
+                case 'ringan': trafficCount = 3; break;
+                case 'sedang': trafficCount = 6; break;
+                case 'padat': trafficCount = 10; break;
+                default: trafficCount = 6;
+            }
+            
+            for (let i = 0; i < trafficCount; i++) {
+                const trafficCar = document.createElement('div');
+                trafficCar.className = 'traffic-car';
+                
+                // Tentukan kecepatan berdasarkan kondisi jalan
+                let speed;
+                if (roadCondition === 'tol') {
+                    speed = Math.random() * 60 + 90; // 90-150 km/jam
+                } else {
+                    speed = Math.random() * 30 + 40; // 40-70 km/jam
+                }
+                
+                const lane = Math.random() * 3; // 0, 1, or 2
+                const left = 30 + lane * 20;
+                const top = Math.random() * 100 - 200; // Mulai dari atas layar
+                
+                trafficCar.style.left = `${left}%`;
+                trafficCar.style.top = `${top}%`;
+                
+                // Tambahkan roda
+                const frontWheel = document.createElement('div');
+                frontWheel.className = 'car-wheel-3d front';
+                trafficCar.appendChild(frontWheel);
+                
+                const backWheel = document.createElement('div');
+                backWheel.className = 'car-wheel-3d back';
+                trafficCar.appendChild(backWheel);
+                
+                // Simpan data traffic
+                trafficCars.push({
+                    element: trafficCar,
+                    speed: speed,
+                    lane: lane,
+                    left: left
+                });
+                
+                simulator.appendChild(trafficCar);
+            }
+        }
+
+        function startSimulator() {
+            if (simulatorInterval) {
+                clearInterval(simulatorInterval);
+            }
+            
+            simulatorInterval = setInterval(updateSimulator, 50);
+        }
+
+        function stopSimulator() {
+            if (simulatorInterval) {
+                clearInterval(simulatorInterval);
+                simulatorInterval = null;
+            }
+        }
+
+        function resetSimulator() {
+            stopSimulator();
+            carSpeed = 0;
+            carPosition = 50;
+            carDirection = 0;
+            distance = 0;
+            updateSimulatorUI();
+            
+            // Reset posisi mobil pemain
+            const playerCar = document.getElementById('playerCar3D');
+            playerCar.style.left = '50%';
+            playerCar.style.transform = 'translateX(-50%) translateZ(0)';
+        }
+
+        function updateSimulator() {
+            // Update kecepatan berdasarkan input pengguna
+            if (isGasPressed) {
+                carSpeed = Math.min(carSpeed + 1, roadCondition === 'tol' ? 150 : 70);
+            } else if (isBrakePressed) {
+                carSpeed = Math.max(carSpeed - 2, 0);
+            } else {
+                // Perlambat secara alami
+                carSpeed = Math.max(carSpeed - 0.5, 0);
+            }
+            
+            // Update posisi berdasarkan belokan
+            if (isTurning) {
+                carPosition = Math.max(10, Math.min(90, carPosition + turnDirection * (carSpeed / 10)));
+                carDirection = turnDirection * (carSpeed / 50);
+            } else {
+                // Kembali ke tengah secara bertahap
+                if (carPosition > 50) {
+                    carPosition = Math.max(50, carPosition - 0.5);
+                } else if (carPosition < 50) {
+                    carPosition = Math.min(50, carPosition + 0.5);
+                }
+                carDirection *= 0.9; // Redam arah belokan
+            }
+            
+            // Update jarak
+            distance += carSpeed / 20;
+            
+            // Update traffic
+            updateTraffic();
+            
+            // Update UI
+            updateSimulatorUI();
+            
+            // Cek tabrakan
+            checkCollisions();
+        }
+
+        function updateTraffic() {
+            trafficCars.forEach(car => {
+                // Gerakkan mobil traffic
+                let top = parseFloat(car.element.style.top || '0');
+                top += car.speed / 20;
+                
+                // Jika mobil traffic keluar dari layar, reset ke atas
+                if (top > 100) {
+                    top = -200;
+                    // Acak ulang lane dan kecepatan
+                    car.lane = Math.floor(Math.random() * 3);
+                    car.left = 30 + car.lane * 20;
+                    
+                    if (roadCondition === 'tol') {
+                        car.speed = Math.random() * 60 + 90;
+                    } else {
+                        car.speed = Math.random() * 30 + 40;
+                    }
+                }
+                
+                car.element.style.top = `${top}%`;
+                car.element.style.left = `${car.left}%`;
+            });
+        }
+
+        function updateSimulatorUI() {
+            // Update nilai kecepatan
+            document.getElementById('speedValue').textContent = `${Math.round(carSpeed)} km/jam`;
+            document.getElementById('distanceValue').textContent = `${Math.round(distance)} m`;
+            document.getElementById('roadCondition').textContent = roadCondition === 'tol' ? 'Tol' : 'Biasa';
+            document.getElementById('trafficValue').textContent = trafficCondition;
+            
+            // Update speedometer
+            const maxSpeed = roadCondition === 'tol' ? 150 : 70;
+            const speedPercent = (carSpeed / maxSpeed) * 100;
+            const rotation = (speedPercent / 100) * 180; // 0-180 derajat
+            
+            document.getElementById('speedometerFill').style.transform = `rotate(${rotation}deg)`;
+            document.getElementById('speedometerValue').textContent = Math.round(carSpeed);
+            
+            // Update posisi mobil pemain
+            const playerCar = document.getElementById('playerCar3D');
+            playerCar.style.left = `${carPosition}%`;
+            playerCar.style.transform = `translateX(-50%) translateZ(0) rotateZ(${carDirection}deg)`;
+        }
+
+        function checkCollisions() {
+            const playerCar = document.getElementById('playerCar3D');
+            const playerRect = playerCar.getBoundingClientRect();
+            
+            trafficCars.forEach(car => {
+                const trafficRect = car.element.getBoundingClientRect();
+                
+                // Deteksi tabrakan sederhana
+                if (
+                    playerRect.left < trafficRect.right &&
+                    playerRect.right > trafficRect.left &&
+                    playerRect.top < trafficRect.bottom &&
+                    playerRect.bottom > trafficRect.top
+                ) {
+                    // Tabrakan terjadi
+                    carSpeed = Math.max(0, carSpeed - 10);
+                    // Beri efek visual pada mobil yang bertabrakan
+                    car.element.style.background = '#e74c3c';
+                    setTimeout(() => {
+                        car.element.style.background = '#9b59b6';
+                    }, 500);
+                }
+            });
+        }
+
+        // ===== FUNGSI KONTROL SIMULATOR =====
+        function startGas() {
+            isGasPressed = true;
+        }
+
+        function stopGas() {
+            isGasPressed = false;
+        }
+
+        function startBrake() {
+            isBrakePressed = true;
+        }
+
+        function stopBrake() {
+            isBrakePressed = false;
+        }
+
+        function startTurnLeft() {
+            isTurning = true;
+            turnDirection = -1;
+        }
+
+        function startTurnRight() {
+            isTurning = true;
+            turnDirection = 1;
+        }
+
+        function stopTurn() {
+            isTurning = false;
+            turnDirection = 0;
+        }
+
+        function toggleMap() {
+            const map = document.getElementById('jakartaMap');
+            map.classList.toggle('active');
+            isMapVisible = !isMapVisible;
+        }
+
+        function changeTrafficCondition() {
+            const conditions = ['ringan', 'sedang', 'padat'];
+            const currentIndex = conditions.indexOf(trafficCondition);
+            const nextIndex = (currentIndex + 1) % conditions.length;
+            trafficCondition = conditions[nextIndex];
+            
+            generateTraffic();
+            updateSimulatorUI();
+        }
+
+        // ===== FUNGSI MODAL =====
+        function openModal() {
+            document.getElementById('infoModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('infoModal').style.display = 'none';
+        }
+
+        // ===== INISIALISASI SAAT HALAMAN DIMUAT =====
+        window.onload = function() {
+            startHelloAnimation();
+            
+            // Inisialisasi simulator jika tab aktif
+            if (document.getElementById('tab-simulator').classList.contains('active')) {
+                initializeSimulator();
+            }
+            
+            // Tampilkan modal info setelah beberapa detik
+            setTimeout(openModal, 2000);
+            
+            // Tambahkan event listener untuk keyboard
+            document.addEventListener('keydown', handleKeyDown);
+            document.addEventListener('keyup', handleKeyUp);
+        };
+
+        // ===== FUNGSI KEYBOARD CONTROL =====
+        function handleKeyDown(e) {
+            switch(e.key) {
+                case 'ArrowUp':
+                case 'w':
+                case 'W':
+                    startGas();
+                    break;
+                case 'ArrowDown':
+                case 's':
+                case 'S':
+                    startBrake();
+                    break;
+                case 'ArrowLeft':
+                case 'a':
+                case 'A':
+                    startTurnLeft();
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                case 'D':
+                    startTurnRight();
+                    break;
+            }
+        }
+
+        function handleKeyUp(e) {
+            switch(e.key) {
+                case 'ArrowUp':
+                case 'w':
+                case 'W':
+                    stopGas();
+                    break;
+                case 'ArrowDown':
+                case 's':
+                case 'S':
+                    stopBrake();
+                    break;
+                case 'ArrowLeft':
+                case 'a':
+                case 'A':
+                case 'ArrowRight':
+                case 'd':
+                case 'D':
+                    stopTurn();
+                    break;
+            }
+        }
+    </script>
+
+    <!-- Python Code (Brython) -->
+    <script type="text/python">
+        from browser import document, alert, console
+        import math
+        import random
+
+        # Fungsi untuk memproses input dengan Python
+        def process_with_python(ev):
+            input_element = document['pyInput']
+            output_element = document['pyOutput']
+            
+            try:
+                number = float(input_element.value)
+                
+                # Lakukan berbagai operasi matematika
+                square = number ** 2
+                square_root = math.sqrt(abs(number))
+                factorial = math.factorial(int(abs(number))) if number < 20 else "Terlalu besar untuk faktorial"
+                sin_val = math.sin(math.radians(number))
+                cos_val = math.cos(math.radians(number))
+                
+                # Generate bilangan acak berdasarkan input
+                random.seed(number)
+                random_num = random.randint(1, 100)
+                
+                # Buat output
+                output_html = f"""
+                <div class="output-line"><strong>Angka input:</strong> {number}</div>
+                <div class="output-line"><strong>Kuadrat:</strong> {square}</div>
+                <div class="output-line"><strong>Akar kuadrat:</strong> {square_root:.4f}</div>
+                <div class="output-line"><strong>Faktorial:</strong> {factorial}</div>
+                <div class="output-line"><strong>Sinus ({number}°):</strong> {sin_val:.4f}</div>
+                <div class="output-line"><strong>Cosinus ({number}°):</strong> {cos_val:.4f}</div>
+                <div class="output-line"><strong>Bilangan acak (berdasarkan seed):</strong> {random_num}</div>
+                """
+                
+                output_element.html = output_html
+                
+            except ValueError:
+                output_element.html = '<div class="output-line">Silakan masukkan angka yang valid!</div>'
+            except Exception as e:
+                output_element.html = f'<div class="output-line">Error: {str(e)}</div>'
+
+        # Fungsi untuk menghasilkan deret Fibonacci
+        def generate_fibonacci(ev):
+            input_element = document['fibInput']
+            output_element = document['fibOutput']
+            
+            try:
+                n = int(input_element.value)
+                if n <= 0:
+                    output_element.html = '<div class="output-line">Masukkan angka positif!</div>'
+                    return
+                
+                fib_sequence = [0, 1]
+                for i in range(2, n):
+                    fib_sequence.append(fib_sequence[i-1] + fib_sequence[i-2])
+                
+                output_html = "<div class='output-line'><strong>Deret Fibonacci:</strong></div>"
+                for i, num in enumerate(fib_sequence[:n]):
+                    output_html += f"<div class='output-line'>F({i}) = {num}</div>"
+                
+                output_element.html = output_html
+                
+            except ValueError:
+                output_element.html = '<div class="output-line">Silakan masukkan angka yang valid!</div>'
+
+        # Fungsi untuk evaluasi ekspresi matematika
+        def evaluate_math(ev):
+            input_element = document['mathInput']
+            output_element = document['mathOutput']
+            
+            try:
+                # Gunakan eval dengan hati-hati (hanya untuk demo)
+                result = eval(input_element.value)
+                output_element.html = f"<div class='output-line'><strong>Hasil:</strong> {result}</div>"
+            except Exception as e:
+                output_element.html = f"<div class='output-line'><strong>Error:</strong> {str(e)}</div>"
+
+        # Fungsi untuk memproses list
+        def process_list(ev):
+            input_element = document['listInput']
+            output_element = document['listOutput']
+            
+            try:
+                input_list = [float(x.strip()) for x in input_element.value.split(',')]
+                
+                if not input_list:
+                    output_element.html = '<div class="output-line">List kosong!</div>'
+                    return
+                
+                total = sum(input_list)
+                average = total / len(input_list)
+                maximum = max(input_list)
+                minimum = min(input_list)
+                sorted_list = sorted(input_list)
+                
+                output_html = f"""
+                <div class="output-line"><strong>List asli:</strong> {input_list}</div>
+                <div class="output-line"><strong>Jumlah:</strong> {total}</div>
+                <div class="output-line"><strong>Rata-rata:</strong> {average:.2f}</div>
+                <div class="output-line"><strong>Nilai maksimum:</strong> {maximum}</div>
+                <div class="output-line"><strong>Nilai minimum:</strong> {minimum}</div>
+                <div class="output-line"><strong>List terurut:</strong> {sorted_list}</div>
+                """
+                
+                output_element.html = output_html
+                
+            except ValueError:
+                output_element.html = '<div class="output-line">Format list tidak valid!</div>'
+            except Exception as e:
+                output_element.html = f'<div class="output-line">Error: {str(e)}</div>'
+
+        # Fungsi untuk simulasi traffic
+        def simulate_traffic(ev):
+            input_element = document['trafficSimInput']
+            output_element = document['trafficSimOutput']
+            
+            try:
+                n = int(input_element.value)
+                if n <= 0:
+                    output_element.html = '<div class="output-line">Masukkan angka positif!</div>'
+                    return
+                
+                # Simulasi traffic dengan kondisi jalan berbeda
+                traffic_conditions = ['ringan', 'sedang', 'padat']
+                road_conditions = ['biasa', 'tol']
+                
+                output_html = "<div class='output-line'><strong>Hasil Simulasi Traffic:</strong></div>"
+                
+                for road in road_conditions:
+                    output_html += f"<div class='output-line'><strong>Jalan {road}:</strong></div>"
+                    
+                    for condition in traffic_conditions:
+                        # Hitung kecepatan rata-rata berdasarkan kondisi
+                        if road == 'tol':
+                            if condition == 'ringan':
+                                avg_speed = random.randint(120, 150)
+                            elif condition == 'sedang':
+                                avg_speed = random.randint(90, 120)
+                            else:  # padat
+                                avg_speed = random.randint(60, 90)
+                        else:  # jalan biasa
+                            if condition == 'ringan':
+                                avg_speed = random.randint(60, 70)
+                            elif condition == 'sedang':
+                                avg_speed = random.randint(50, 60)
+                            else:  # padat
+                                avg_speed = random.randint(40, 50)
+                        
+                        output_html += f"<div class='output-line'>- {condition}: {avg_speed} km/jam</div>"
+                
+                output_element.html = output_html
+                
+            except ValueError:
+                output_element.html = '<div class="output-line">Silakan masukkan angka yang valid!</div>'
+
+        # Event binding
+        document['processPythonBtn'].bind('click', process_with_python)
+        document['fibBtn'].bind('click', generate_fibonacci)
+        document['mathBtn'].bind('click', evaluate_math)
+        document['listBtn'].bind('click', process_list)
+        document['trafficSimBtn'].bind('click', simulate_traffic)
+    </script>
+
+    <!-- Tambahan JavaScript untuk mengikat fungsi Python -->
+    <script>
+        // Fungsi wrapper untuk memanggil kode Python dari JavaScript
+        function processWithPython() {
+            const event = new Event('click');
+            document.getElementById('processPythonBtn').dispatchEvent(event);
+        }
+
+        function generateFibonacci() {
+            const event = new Event('click');
+            document.getElementById('fibBtn').dispatchEvent(event);
+        }
+
+        function evaluateMath() {
+            const event = new Event('click');
+            document.getElementById('mathBtn').dispatchEvent(event);
+        }
+
+        function processList() {
+            const event = new Event('click');
+            document.getElementById('listBtn').dispatchEvent(event);
+        }
+
+        function simulateTraffic() {
+            const event = new Event('click');
+            document.getElementById('trafficSimBtn').dispatchEvent(event);
+        }
+
+        // Buat tombol untuk Python (akan disembunyikan)
+        const pythonButtons = [
+            {id: 'processPythonBtn', text: 'Process Python'},
+            {id: 'fibBtn', text: 'Generate Fibonacci'},
+            {id: 'mathBtn', text: 'Evaluate Math'},
+            {id: 'listBtn', text: 'Process List'},
+            {id: 'trafficSimBtn', text: 'Simulate Traffic'}
+        ];
+
+        pythonButtons.forEach(button => {
+            const btn = document.createElement('button');
+            btn.id = button.id;
+            btn.textContent = button.text;
+            btn.style.display = 'none';
+            document.body.appendChild(btn);
+        });
+    </script>
+</body>
+</html>
